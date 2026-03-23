@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cô Yến Manager</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo.png">
+    
+    <!-- Sử dụng Tailwind CSS cho UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 900: '#134e4a' }
+                    },
+                    fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    animation: {
+                        blob: "blob 15s infinite alternate cubic-bezier(0.4, 0, 0.2, 1)",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": { transform: "translate(0px, 0px) scale(1)" },
+                            "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                            "100%": { transform: "translate(0px, 0px) scale(1)" }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes scale-in {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-zoom { animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        body { padding-bottom: 85px; }
+        @media (min-width: 768px) { body { padding-bottom: 0px; } }
+        
+        .hidden-important { display: none !important; }
+    </style>
+</head>
+<body class="text-slate-800 dark:text-slate-100 antialiased min-h-screen flex flex-col font-sans relative transition-colors duration-500">
+
+    <script>
+        // ==========================================
+        // CẤU HÌNH DATABASE (GOOGLE SHEETS)
+        // Dán link Web App URL của bạn vào ngoặc kép bên dưới:
+        // ==========================================
+        const GOOGLE_SHEET_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz8_Y0KeJ0-AsPm4xQdIg-7WnJP4cEpC7hvbsAi8taYpMjpj1GY63CaK6lHioB1mifD/exec"; 
+        
+        // Trạng thái ứng dụng
+        let APP_ACCOUNTS = [];
+        let currentTimerInterval;
+    </script>
+
+    <!-- NỀN ĐỘNG (ANIMATED BACKGROUND) -->
+    <div class="fixed inset-0 z-[-1] overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+        <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary-300/30 dark:bg-primary-600/20 blur-[80px] sm:blur-[120px] animate-blob mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute top-[20%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-blue-300/30 dark:bg-blue-600/20 blur-[80px] sm:blur-[120px] animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen"></div>
+        <div class="absolute bottom-[-10%] left-[20%] w-[60vw] h-[60vw] rounded-full bg-purple-300/30 dark:bg-purple-600/20 blur-[80px] sm:blur-[120px] animate-blob animation-delay-4000 mix-blend-multiply dark:mix-blend-screen"></div>
+    </div>
+
+    <!-- HEADER (Glassmorphism) -->
+    <header class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 sticky top-0 z-30 shadow-sm transition-colors duration-500">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <!-- Chèn ảnh Logo. Nếu không có file logo.png, trình duyệt sẽ hiện icon thay thế -->
+                <img src="logo.png" alt="Logo" onerror="this.outerHTML='<div class=\'bg-gradient-to-br from-primary-500 to-primary-600 text-white p-2 rounded-xl shadow-md shadow-primary-500/20\'><svg width=\'22\' height=\'22\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'11\' width=\'18\' height=\'11\' rx=\'2\' ry=\'2\'></rect><path d=\'M7 11V7a5 5 0 0 1 10 0v4\'></path></svg></div>'" class="w-10 h-10 object-contain rounded-xl shadow-md shadow-primary-500/20 bg-white">
+                <h1 class="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight">
+                    Cô Yến <span class="text-primary-600 dark:text-primary-500 font-semibold">Manager</span>
+                </h1>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleTheme()" class="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors">
+                    <svg id="icon-sun" class="hidden w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+
+                <!-- Add Button (Desktop) -->
+                <button onclick="toggleModal('add-modal', true)" class="hidden md:flex bg-slate-900 dark:bg-primary-500 hover:bg-slate-800 dark:hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-md items-center gap-2 active:scale-95 border border-transparent dark:border-primary-400/30">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Thêm Tài Khoản</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+        
+        <!-- Cảnh báo lỗi kết nối (Offline Mode) -->
+        <div id="sync-warning" class="hidden-important bg-amber-50/90 dark:bg-amber-900/30 backdrop-blur-md border border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-200 px-4 py-3 rounded-xl mb-6 flex items-start gap-3 shadow-sm animate-fade-in">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <div class="flex-1">
+                <h4 class="font-bold text-sm">Đang chạy ở chế độ ngoại tuyến (Offline)</h4>
+                <p class="text-xs mt-1 text-amber-700 dark:text-amber-300">Không thể kết nối với Google Sheets. Dữ liệu tạm thời lưu trên thiết bị. Bạn nhớ dán Link Web App và Deploy quyền "Anyone" nhé.</p>
+            </div>
+            <button onclick="loadData()" class="shrink-0 bg-amber-200 dark:bg-amber-700/50 hover:bg-amber-300 dark:hover:bg-amber-600 text-amber-800 dark:text-amber-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 mt-1">
+                Thử lại
+            </button>
+        </div>
+
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-2">
+                <h2 class="text-slate-600 dark:text-slate-300 font-medium text-sm sm:text-base">Tài khoản của bạn</h2>
+                <span id="account-count" class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm border border-slate-200/50 dark:border-slate-700/50">0</span>
+            </div>
+        </div>
+
+        <!-- Trạng thái tải dữ liệu -->
+        <div id="loading-state" class="flex justify-center items-center py-20 hidden-important">
+            <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 dark:border-slate-700 border-t-primary-600 dark:border-t-primary-500"></div>
+        </div>
+
+        <!-- Trạng thái trống -->
+        <div id="empty-state" class="bg-white/50 dark:bg-slate-800/50 backdrop-blur-md rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center flex flex-col items-center justify-center hidden-important">
+            <div class="bg-white dark:bg-slate-700 p-4 rounded-full mb-4 shadow-sm">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">Chưa có tài khoản nào</h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-6 max-w-sm text-sm">Hãy bấm "Thêm Tài Khoản" để bắt đầu quản lý thông tin đăng nhập và mã 2FA của bạn.</p>
+            <button onclick="toggleModal('add-modal', true)" class="text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-900/30 px-6 py-2.5 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors">
+                + Thêm ngay
+            </button>
+        </div>
+
+        <!-- Vùng chứa danh sách tài khoản được render -->
+        <div id="accounts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="hidden md:block text-center py-6 text-slate-400 dark:text-slate-500 text-sm mt-auto backdrop-blur-sm">
+        &copy; 2024 Cô Yến Manager UI. Google Sheets Sync.
+    </footer>
+
+    <!-- THANH ĐIỀU HƯỚNG MOBILE -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 z-[45] flex justify-center items-center h-[65px] shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] transition-colors duration-500">
+        <div class="relative -mt-6">
+            <button onclick="toggleModal('add-modal', true)" class="bg-slate-900 dark:bg-primary-500 text-white w-[56px] h-[56px] rounded-full shadow-lg shadow-slate-900/30 dark:shadow-primary-500/30 flex items-center justify-center active:scale-90 transition-all border-[4px] border-white dark:border-slate-900 ring-0 outline-none">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODAL THÊM TÀI KHOẢN -->
+    <div id="add-modal" class="fixed inset-0 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 relative border border-white/20 dark:border-slate-700/50" id="add-modal-content">
+            <button type="button" onclick="toggleModal('add-modal', false)" class="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 p-2 rounded-full transition-colors z-10">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <div class="bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 p-1.5 rounded-lg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                    Thêm tài khoản mới
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Lưu trữ thông tin đăng nhập và mã 2FA.</p>
+            </div>
+
+            <form id="add-form" class="p-6 space-y-5" onsubmit="handleAddAccount(event)">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tên Gợi Nhớ (Nền tảng)</label>
+                    <input id="input-name" required type="text" placeholder="VD: Facebook, Google, Binance..." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:border-primary-500 dark:focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 outline-none transition-all text-sm font-medium text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tài khoản / Email</label>
+                    <input id="input-email" required type="text" placeholder="Nhập tên đăng nhập hoặc email" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:border-primary-500 dark:focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 outline-none transition-all text-sm font-medium text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Mật khẩu</label>
+                    <input id="input-password" required type="text" placeholder="Nhập mật khẩu" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:border-primary-500 dark:focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 outline-none transition-all text-sm font-medium text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500">
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary-600 dark:text-primary-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        Mã bảo mật 2FA (Secret Key)
+                    </label>
+                    <input id="input-2fa" type="text" placeholder="VD: JBSWY3DPEHPK3PXP" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary-500 dark:focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 dark:focus:ring-primary-500/20 outline-none font-mono text-sm transition-all mb-2 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Dán chuỗi khóa bí mật (Base32) vào đây. Bỏ trống nếu không có 2FA.</p>
+                </div>
+                <div class="pt-2">
+                    <button id="btn-submit" type="submit" class="w-full bg-slate-900 dark:bg-primary-500 hover:bg-slate-800 dark:hover:bg-primary-600 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md active:scale-[0.98] flex justify-center items-center">
+                        Hoàn tất & Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-24 md:bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-slate-700 text-white px-5 py-3 rounded-full shadow-2xl z-[70] flex items-center gap-2 font-medium opacity-0 translate-y-10 transition-all duration-300 pointer-events-none border border-slate-700 dark:border-slate-600">
+        <div id="toast-indicator" class="w-2 h-2 bg-green-400 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
+        <span id="toast-msg">Thành công!</span>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC & UI -->
+    <script>
+        // --- 1. QUẢN LÝ THEME (SÁNG/TỐI) ---
+        const htmlEl = document.documentElement;
+        const iconSun = document.getElementById('icon-sun');
+        const iconMoon = document.getElementById('icon-moon');
+
+        function toggleTheme() {
+            if (htmlEl.classList.contains('dark')) {
+                htmlEl.classList.remove('dark');
+                iconSun.classList.add('hidden');
+                iconMoon.classList.remove('hidden');
+                localStorage.setItem('theme', 'light');
+            } else {
+                htmlEl.classList.add('dark');
+                iconSun.classList.remove('hidden');
+                iconMoon.classList.add('hidden');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                htmlEl.classList.add('dark');
+                iconSun.classList.remove('hidden');
+                iconMoon.classList.add('hidden');
+            } else {
+                htmlEl.classList.remove('dark');
+            }
+        }
+
+        // --- 2. TIỆN ÍCH GIAO DIỆN (MODAL, TOAST, TEXT) ---
+        function toggleModal(modalID, show) {
+            const modal = document.getElementById(modalID);
+            const content = document.getElementById(modalID + '-content');
+            if (show) {
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+            } else {
+                modal.classList.add('opacity-0'); content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            }
+        }
+
+        let toastTimer;
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            
+            const indicator = document.getElementById('toast-indicator');
+            if (isError) {
+                indicator.className = 'w-2 h-2 bg-red-400 rounded-full shadow-[0_0_8px_rgba(248,113,113,0.8)]';
+            } else {
+                indicator.className = 'w-2 h-2 bg-green-400 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.8)]';
+            }
+
+            clearTimeout(toastTimer);
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            toastTimer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 2500);
+        }
+
+        const escapeHTML = (str) => {
+            if(!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        };
+        const escapeQuotes = (str) => { if(!str) return ''; return str.replace(/'/g, "\\'").replace(/"/g, '\\"'); };
+
+        const copyToClipboard = (text, label) => {
+            if (!text || text === '------') return;
+            const copyFallback = () => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed"; document.body.appendChild(textArea);
+                textArea.focus(); textArea.select();
+                try { document.execCommand('copy'); showToast(`Đã copy ${label}!`); } 
+                catch (err) { showToast('Lỗi khi copy!', true); }
+                document.body.removeChild(textArea);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showToast(`Đã copy ${label}!`)).catch(copyFallback);
+            } else { copyFallback(); }
+        };
+
+        const copyTotp = (id) => {
+            const el = document.getElementById(`totp-${id}`);
+            if(el) copyToClipboard(el.textContent, 'Mã 2FA');
+        };
+
+        const togglePassword = (id) => {
+            const pwdEl = document.getElementById(`pwd-${id}`);
+            const iconEl = document.getElementById(`icon-pwd-${id}`);
+            const realPwd = pwdEl.getAttribute('data-pwd');
+            
+            if (pwdEl.textContent === '••••••••••••') {
+                pwdEl.textContent = realPwd;
+                iconEl.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+            } else {
+                pwdEl.textContent = '••••••••••••';
+                iconEl.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
+            }
+        };
+
+        // --- 3. THUẬT TOÁN TOTP 2FA ---
+        const base32ToUint8Array = (base32) => {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            let bits = 0, value = 0, index = 0;
+            const cleanBase32 = base32.replace(/\s|-/g, '').toUpperCase();
+            const output = new Uint8Array(Math.ceil(cleanBase32.length * 5 / 8));
+            for (let i = 0; i < cleanBase32.length; i++) {
+                const val = alphabet.indexOf(cleanBase32[i]);
+                if (val === -1) continue;
+                value = (value << 5) | val;
+                bits += 5;
+                if (bits >= 8) { output[index++] = (value >>> (bits - 8)) & 255; bits -= 8; }
+            }
+            return output.slice(0, index);
+        };
+
+        const generateTOTP = async (secret) => {
+            if (!secret) return "------";
+            try {
+                const keyBytes = base32ToUint8Array(secret);
+                const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+                const epoch = Math.floor(Date.now() / 1000);
+                const timeStep = Math.floor(epoch / 30); // Giữ nguyên thuật toán 30s chuẩn server
+                const buffer = new ArrayBuffer(8);
+                const view = new DataView(buffer);
+                view.setUint32(4, timeStep, false);
+                const signature = await crypto.subtle.sign('HMAC', key, buffer);
+                const hmac = new Uint8Array(signature);
+                const offset = hmac[hmac.length - 1] & 0x0f;
+                const code = (((hmac[offset] & 0x7f) << 24) | ((hmac[offset + 1] & 0xff) << 16) | ((hmac[offset + 2] & 0xff) << 8) | (hmac[offset + 3] & 0xff)) % 1000000;
+                return code.toString().padStart(6, '0');
+            } catch (error) { return "LỖI"; }
+        };
+
+        const updateAll2FA = async () => {
+            for (const acc of APP_ACCOUNTS) {
+                if (acc.twoFaSecret) {
+                    const code = await generateTOTP(acc.twoFaSecret);
+                    const el = document.getElementById(`totp-${acc.id}`);
+                    if (el) el.textContent = code;
+                }
+            }
+        };
+
+        // --- 4. RENDER VÀ LOGIC DỮ LIỆU ---
+        const renderAccounts = () => {
+            const container = document.getElementById('accounts-container');
+            const emptyState = document.getElementById('empty-state');
+            document.getElementById('account-count').textContent = APP_ACCOUNTS.length;
+
+            if (APP_ACCOUNTS.length === 0) {
+                container.classList.add('hidden-important');
+                emptyState.classList.remove('hidden-important');
+                return;
+            }
+
+            container.classList.remove('hidden-important');
+            emptyState.classList.add('hidden-important');
+
+            let html = '';
+            APP_ACCOUNTS.forEach((acc, index) => {
+                const initial = acc.name ? acc.name.charAt(0).toUpperCase() : '?';
+                const has2fa = acc.twoFaSecret && acc.twoFaSecret.trim() !== '';
+                const delay = index * 0.1;
+                
+                html += `
+                <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-2xl border border-white/50 dark:border-slate-700/50 shadow-sm hover:shadow-lg hover:border-primary-200/50 dark:hover:border-primary-700/50 transition-all duration-300 overflow-hidden flex flex-col animate-fade-in group" style="animation-delay: ${delay}s">
+                    <div class="px-5 py-4 border-b border-slate-100/50 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold shadow-inner border border-blue-200/50 dark:border-blue-500/20">
+                                ${initial}
+                            </div>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 text-lg truncate">${escapeHTML(acc.name)}</h3>
+                        </div>
+                        <button onclick="handleDelete('${acc.id}')" class="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <div class="p-5 flex flex-col gap-4">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 block">Tài khoản / Email</span>
+                            <div class="flex items-center justify-between bg-white/50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                <span class="text-slate-700 dark:text-slate-300 text-sm font-medium truncate">${escapeHTML(acc.email)}</span>
+                                <button onclick="copyToClipboard('${escapeQuotes(acc.email)}', 'Email')" class="text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 ml-2" title="Copy">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 block">Mật khẩu</span>
+                            <div class="flex items-center justify-between bg-white/50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                <span id="pwd-${acc.id}" data-pwd="${escapeHTML(acc.password)}" class="text-slate-700 dark:text-slate-300 text-sm font-mono tracking-widest">••••••••••••</span>
+                                <div class="flex gap-2 ml-2">
+                                    <button onclick="togglePassword('${acc.id}')" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-300" title="Hiện/Ẩn mật khẩu">
+                                        <svg id="icon-pwd-${acc.id}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                    <button onclick="copyToClipboard('${escapeQuotes(acc.password)}', 'Mật khẩu')" class="text-slate-400 hover:text-primary-600 dark:hover:text-primary-400" title="Copy">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-1 ${!has2fa ? 'hidden-important' : ''}">
+                            <span class="text-[11px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-2 block flex items-center gap-1">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                Mã 2FA (TOTP)
+                            </span>
+                            <div onclick="copyTotp('${acc.id}')" class="relative bg-primary-50/80 dark:bg-primary-900/20 border border-primary-100/80 dark:border-primary-800/30 rounded-xl overflow-hidden group/totp cursor-pointer hover:bg-primary-100/80 dark:hover:bg-primary-900/40 transition-colors">
+                                <div class="absolute bottom-0 left-0 w-full h-1 bg-primary-200/50 dark:bg-primary-800/50">
+                                    <div class="otp-progress h-full bg-primary-500 dark:bg-primary-400 transition-all duration-1000 ease-linear" style="width: 100%"></div>
+                                </div>
+                                <div class="flex items-center justify-between p-3.5 pb-4 relative z-10">
+                                    <div class="flex flex-col">
+                                        <span id="totp-${acc.id}" class="text-primary-700 dark:text-primary-300 text-3xl font-bold tracking-[0.25em] font-mono select-all leading-none">------</span>
+                                        <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-1.5 flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                            Làm mới sau: <span class="otp-timer font-bold text-primary-600 dark:text-primary-400">30s</span>
+                                        </span>
+                                    </div>
+                                    <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-2 rounded-lg text-primary-600 dark:text-primary-400 shadow-sm opacity-50 group-hover/totp:opacity-100 transition-opacity border border-white/50 dark:border-slate-700/50">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            const addCardHtml = `
+            <button onclick="toggleModal('add-modal', true)" class="hidden md:flex bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border-2 border-dashed border-slate-300 dark:border-slate-700/70 rounded-2xl flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-400 dark:hover:border-primary-500/50 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300 min-h-[350px] animate-fade-in">
+                <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 rounded-full shadow-sm mb-3 border border-slate-100 dark:border-slate-700">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <span class="font-medium">Thêm tài khoản mới</span>
+            </button>`;
+
+            container.innerHTML = html + addCardHtml;
+            updateAll2FA();
+        }
+
+        // --- 5. LOGIC KẾT NỐI GOOGLE SHEETS (FETCH API) ---
+        const loadData = async () => {
+            document.getElementById('loading-state').classList.remove('hidden-important');
+            document.getElementById('accounts-container').classList.add('hidden-important');
+            const syncWarning = document.getElementById('sync-warning');
+            
+            if (GOOGLE_SHEET_WEB_APP_URL && GOOGLE_SHEET_WEB_APP_URL.startsWith('http')) {
+                try {
+                    const res = await fetch(GOOGLE_SHEET_WEB_APP_URL);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    
+                    const data = await res.json();
+                    APP_ACCOUNTS = data || [];
+                    localStorage.setItem('coyen_html_db', JSON.stringify(APP_ACCOUNTS));
+                    syncWarning.classList.add('hidden-important');
+                } catch (e) {
+                    console.error("Lỗi Fetch Data:", e);
+                    syncWarning.classList.remove('hidden-important');
+                    APP_ACCOUNTS = JSON.parse(localStorage.getItem('coyen_html_db') || '[]');
+                }
+            } else {
+                APP_ACCOUNTS = JSON.parse(localStorage.getItem('coyen_html_db') || '[]');
+                if(!GOOGLE_SHEET_WEB_APP_URL) syncWarning.classList.remove('hidden-important');
+            }
+            
+            document.getElementById('loading-state').classList.add('hidden-important');
+            renderAccounts();
+        };
+
+        const handleAddAccount = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang lưu...`;
+            btn.disabled = true;
+
+            const newAcc = {
+                id: Date.now().toString(),
+                name: document.getElementById('input-name').value,
+                email: document.getElementById('input-email').value,
+                password: document.getElementById('input-password').value,
+                twoFaSecret: document.getElementById('input-2fa').value.replace(/\s/g, '')
+            };
+
+            APP_ACCOUNTS.push(newAcc);
+            localStorage.setItem('coyen_html_db', JSON.stringify(APP_ACCOUNTS));
+            
+            let successCloud = false;
+            if (GOOGLE_SHEET_WEB_APP_URL && GOOGLE_SHEET_WEB_APP_URL.startsWith('http')) {
+                try {
+                    await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'add', account: newAcc })
+                    });
+                    successCloud = true;
+                    document.getElementById('sync-warning').classList.add('hidden-important');
+                } catch(err) { 
+                    console.error("Lỗi lưu lên cloud:", err); 
+                    document.getElementById('sync-warning').classList.remove('hidden-important');
+                }
+            }
+
+            document.getElementById('add-form').reset();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            toggleModal('add-modal', false);
+            renderAccounts();
+            
+            if (successCloud) {
+                showToast("Thêm tài khoản thành công!");
+            } else {
+                showToast("Đã lưu ngoại tuyến (Offline)", true);
+            }
+        };
+
+        const handleDelete = async (id) => {
+            if (!confirm("Bạn có chắc chắn muốn xóa tài khoản này không?")) return;
+            
+            APP_ACCOUNTS = APP_ACCOUNTS.filter(acc => acc.id !== id);
+            localStorage.setItem('coyen_html_db', JSON.stringify(APP_ACCOUNTS));
+            renderAccounts();
+            
+            if (GOOGLE_SHEET_WEB_APP_URL && GOOGLE_SHEET_WEB_APP_URL.startsWith('http')) {
+                try {
+                    await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'delete', id: id })
+                    });
+                    showToast("Đã xoá tài khoản!");
+                } catch (e) {
+                    console.error(e);
+                    document.getElementById('sync-warning').classList.remove('hidden-important');
+                    showToast("Đã xoá (Offline)", true);
+                }
+            } else {
+                showToast("Đã xoá (Offline)", true);
+            }
+        };
+
+        // --- 6. HỆ THỐNG ĐẾM NGƯỢC THỜI GIAN CHUẨN (30 GIÂY) ---
+        function startTimer() {
+            setInterval(() => {
+                const epoch = Math.floor(Date.now() / 1000);
+                const remaining = 30 - (epoch % 30); // QUAY LẠI CHUẨN 30 GIÂY
+                const progressWidth = ((remaining / 30) * 100) + '%';
+                
+                const timerTexts = document.querySelectorAll('.otp-timer');
+                const progressBars = document.querySelectorAll('.otp-progress');
+
+                timerTexts.forEach(el => {
+                    el.textContent = remaining + 's';
+                    if (remaining <= 5) {
+                        el.classList.remove('text-primary-600', 'dark:text-primary-400');
+                        el.classList.add('text-red-500', 'dark:text-red-400');
+                    } else {
+                        el.classList.remove('text-red-500', 'dark:text-red-400');
+                        el.classList.add('text-primary-600', 'dark:text-primary-400');
+                    }
+                });
+
+                progressBars.forEach(el => {
+                    el.style.width = progressWidth;
+                    if (remaining <= 5) {
+                        el.classList.remove('bg-primary-500', 'dark:bg-primary-400');
+                        el.classList.add('bg-red-500', 'dark:bg-red-500');
+                    } else {
+                        el.classList.remove('bg-red-500', 'dark:bg-red-500');
+                        el.classList.add('bg-primary-500', 'dark:bg-primary-400');
+                    }
+                });
+
+                // Cập nhật lại mã khi qua chu kỳ 30s mới
+                if (remaining === 30) {
+                    updateAll2FA();
+                }
+
+            }, 1000);
+        }
+
+        // KHỞI CHẠY APP
+        initTheme();
+        loadData();
+        startTimer();
+    </script>
+</body>
+</html>
